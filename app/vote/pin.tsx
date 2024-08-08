@@ -4,7 +4,6 @@ import {
   Text,
   View,
   Dimensions,
-  TextInput,
   TouchableOpacity,
   BackHandler,
   Modal,
@@ -14,10 +13,12 @@ import {
 } from "react-native";
 import { useFonts } from "expo-font";
 import { router, useLocalSearchParams } from "expo-router";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StatusBar } from "expo-status-bar";
 
 export default function Pin() {
-  const [fontsLoaded] = useFonts({
+  useFonts({
     "CircularStd-Black": require("../../assets/fonts/CircularStd-Black.ttf"),
     "CircularStd-Book": require("../../assets/fonts/CircularStd-Book.ttf"),
     "CircularStd-Bold": require("../../assets/fonts/CircularStd-Bold.ttf"),
@@ -29,9 +30,8 @@ export default function Pin() {
   const [pin, setPin] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [isCloseButtonPressed, setIsCloseButtonPressed] = useState(false);
-  const { serialNumber } = useLocalSearchParams<{ serialNumber: string }>();
-  const nfcSN = serialNumber;
-  const [response, setResponse] = useState([]);
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const nfcSN = id;
 
   useEffect(() => {
     const backAction = () => {
@@ -48,11 +48,11 @@ export default function Pin() {
   }, []);
 
   const handlePressNumber = (number: string) => {
-    setPin((prevAddress) => prevAddress + number);
+    setPin((prevPin) => prevPin + number);
   };
 
   const handleDelete = () => {
-    setPin((prevAddress) => prevAddress.slice(0, -1));
+    setPin((prevPin) => prevPin.slice(0, -1));
   };
 
   const handleAPI = () => {
@@ -69,140 +69,144 @@ export default function Pin() {
           params: { response: JSON.stringify(res.data) },
         });
       })
-      .catch((error) => {
-        console.error(error);
-        Alert.alert(
-          "Error",
-          "There was an error making the request. Please try again later.",
-          [{ text: "OK" }]
-        );
+      .catch((error: any) => {
+        if (error instanceof AxiosError) {
+          console.error(error);
+          if (error.response?.data.statusCode !== 500) {
+            Alert.alert("", "PIN Tidak Sesuai", [{ text: "OK" }]);
+          } else {
+            Alert.alert("", "Tidak Dapat terhubung", [{ text: "OK" }]);
+          }
+        } else {
+          Alert.alert("", "Tidak Dapat terhubung", [{ text: "OK" }]);
+        }
       });
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerText}>Masukkan PIN Undangan</Text>
+    <>
+      <StatusBar style="dark" />
+      <GestureHandlerRootView>
+        <View style={styles.container}>
+          <Text style={styles.headerText}>Masukkan PIN Undangan</Text>
 
-      <Text style={styles.subText}>Pastikan Anda sudah menerima undangan</Text>
-      <Text style={styles.subText}>beserta PIN</Text>
+          <Text style={styles.subText}>
+            Pastikan Anda sudah menerima undangan
+          </Text>
+          <Text style={styles.subText}>beserta PIN</Text>
 
-      <View style={styles.pin_input}>
-        <TextInput
-          style={styles.input}
-          placeholder="Masukkan PIN"
-          placeholderTextColor="#697D95"
-          value={pin}
-          onChangeText={setPin}
-          autoCorrect={false}
-          editable={false}
-        />
-      </View>
-
-      <View style={styles.bt_number_wrapper}>
-        {[1, 2, 3].map((num) => (
-          <TouchableOpacity
-            key={num}
-            style={styles.bt_number}
-            onPress={() => handlePressNumber(num.toString())}
-          >
-            <Text style={styles.bt_number_text}>{num}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.bt_number_wrapper}>
-        {[4, 5, 6].map((num) => (
-          <TouchableOpacity
-            key={num}
-            style={styles.bt_number}
-            onPress={() => handlePressNumber(num.toString())}
-          >
-            <Text style={styles.bt_number_text}>{num}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.bt_number_wrapper}>
-        {[7, 8, 9].map((num) => (
-          <TouchableOpacity
-            key={num}
-            style={styles.bt_number}
-            onPress={() => handlePressNumber(num.toString())}
-          >
-            <Text style={styles.bt_number_text}>{num}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.bt_number_wrapper}>
-        <TouchableOpacity style={styles.bt_number} onPress={handleDelete}>
-          <Text style={styles.bt_number_text}>X</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bt_number}
-          onPress={() => handlePressNumber("0")}
-        >
-          <Text style={styles.bt_number_text}>0</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bt_number} onPress={handleAPI}>
-          <Text style={styles.bt_number_text}>OK</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Modal
-        animationType="none"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-        }}
-      >
-        <View style={styles.modalWrapper}>
-          <View style={styles.modalOverlay} />
-          <View style={styles.modalView}>
-            <Image
-              source={require("../../assets/images/Error.png")}
-              style={styles.modalImage}
-            />
-            <Text style={styles.modalText}>
-              Apakah Anda yakin ingin mengakhiri proses ini?
-            </Text>
-            <Text style={styles.modalSubText}>
-              Anda akan diarahkan ke halaman utama jika mengakhiri proses ini.
-            </Text>
-            <TouchableHighlight
-              underlayColor="#d21c1c"
-              style={styles.modalButtonClose}
-              onPress={() => {
-                setModalVisible(!modalVisible);
-                setIsCloseButtonPressed(false);
-                router.dismissAll();
-              }}
-              onShowUnderlay={() => setIsCloseButtonPressed(true)}
-              onHideUnderlay={() => setIsCloseButtonPressed(false)}
-            >
-              <Text
-                style={[
-                  styles.modalButtonCloseText,
-                  isCloseButtonPressed && { color: "#fff" },
-                ]}
-              >
-                Akhiri
-              </Text>
-            </TouchableHighlight>
-            <TouchableHighlight
-              underlayColor="#02bca2"
-              style={styles.modalButton}
-              onPress={() => {
-                setModalVisible(false);
-              }}
-            >
-              <Text style={styles.modalButtonText}>Tetap di sini</Text>
-            </TouchableHighlight>
+          <View style={styles.pin_input}>
+            <Text style={styles.input}>{"*".repeat(pin.length)}</Text>
           </View>
+
+          <View style={styles.bt_number_wrapper}>
+            {[1, 2, 3].map((num) => (
+              <TouchableOpacity
+                key={num}
+                style={styles.bt_number}
+                onPress={() => handlePressNumber(num.toString())}
+              >
+                <Text style={styles.bt_number_text}>{num}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.bt_number_wrapper}>
+            {[4, 5, 6].map((num) => (
+              <TouchableOpacity
+                key={num}
+                style={styles.bt_number}
+                onPress={() => handlePressNumber(num.toString())}
+              >
+                <Text style={styles.bt_number_text}>{num}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.bt_number_wrapper}>
+            {[7, 8, 9].map((num) => (
+              <TouchableOpacity
+                key={num}
+                style={styles.bt_number}
+                onPress={() => handlePressNumber(num.toString())}
+              >
+                <Text style={styles.bt_number_text}>{num}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.bt_number_wrapper}>
+            <TouchableOpacity style={styles.bt_number} onPress={handleDelete}>
+              <Text style={styles.bt_number_text}>X</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.bt_number}
+              onPress={() => handlePressNumber("0")}
+            >
+              <Text style={styles.bt_number_text}>0</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bt_number} onPress={handleAPI}>
+              <Text style={styles.bt_number_text}>OK</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Modal
+            animationType="none"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => {
+              setModalVisible(!modalVisible);
+            }}
+          >
+            <View style={styles.modalWrapper}>
+              <View style={styles.modalOverlay} />
+              <View style={styles.modalView}>
+                <Image
+                  source={require("../../assets/images/Error.png")}
+                  style={styles.modalImage}
+                />
+                <Text style={styles.modalText}>
+                  Apakah Anda yakin ingin mengakhiri proses ini?
+                </Text>
+                <Text style={styles.modalSubText}>
+                  Anda akan diarahkan ke halaman utama jika mengakhiri proses
+                  ini.
+                </Text>
+                <TouchableHighlight
+                  underlayColor="#d21c1c"
+                  style={styles.modalButtonClose}
+                  onPress={() => {
+                    setModalVisible(!modalVisible);
+                    setIsCloseButtonPressed(false);
+                    router.dismissAll();
+                  }}
+                  onShowUnderlay={() => setIsCloseButtonPressed(true)}
+                  onHideUnderlay={() => setIsCloseButtonPressed(false)}
+                >
+                  <Text
+                    style={[
+                      styles.modalButtonCloseText,
+                      isCloseButtonPressed && { color: "#fff" },
+                    ]}
+                  >
+                    Akhiri
+                  </Text>
+                </TouchableHighlight>
+                <TouchableHighlight
+                  underlayColor="#02bca2"
+                  style={styles.modalButton}
+                  onPress={() => {
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Tetap di sini</Text>
+                </TouchableHighlight>
+              </View>
+            </View>
+          </Modal>
         </View>
-      </Modal>
-    </View>
+      </GestureHandlerRootView>
+    </>
   );
 }
 
@@ -211,7 +215,7 @@ const { width, height } = Dimensions.get("window");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: "20%",
+    paddingTop: "15%",
     backgroundColor: "white",
     alignItems: "center",
   },
@@ -238,14 +242,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginBottom: "10%",
   },
   input: {
     color: "black",
     fontFamily: "CircularStd-Book",
     fontSize: width * 0.035,
-    flex: 1,
   },
   bt_number_wrapper: {
     flexDirection: "row",
@@ -257,7 +260,6 @@ const styles = StyleSheet.create({
   bt_number: {
     backgroundColor: "#f5f5f5",
     width: "25%",
-    height: "100%",
     borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",

@@ -6,52 +6,99 @@ import {
   Dimensions,
   TextInput,
   TouchableOpacity,
+  Image,
+  ToastAndroid,
 } from "react-native";
-import { Link } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import * as Clipboard from "expo-clipboard";
 
 export default function Riwayat() {
-  const [address, setAddress] = useState("");
+  const { response = "{}" } = useLocalSearchParams<{ response?: string }>();
+  const responseData = JSON.parse(response);
+  const { date, time, candidateNumber, candidateName, transactionAddress } =
+    responseData.data;
+
+  const copyToClipboard = async () => {
+    await Clipboard.setStringAsync(transactionAddress);
+    ToastAndroid.show(
+      "Transaction Hash copied to clipboard",
+      ToastAndroid.SHORT
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerText}>Riwayat Pemilihan</Text>
+    <>
+      <StatusBar style="dark" />
+      <View style={styles.container}>
+        <Text style={styles.headerText}>Riwayat Pemilihan</Text>
 
-      <Text style={styles.subText}>Anda sudah menggunakan hak pilih Anda</Text>
+        <Text style={styles.subText}>
+          Anda sudah menggunakan hak pilih Anda
+        </Text>
 
-      <Text style={styles.addressLabel}>Address</Text>
-      <View style={styles.address_input}>
-        <TextInput
-          style={styles.input}
-          value="0xab361avsbj5810z"
-          editable={false}
-        />
+        <Text style={styles.addressLabel}>Tanggal</Text>
+        <View style={styles.address_input}>
+          <TextInput
+            style={styles.input}
+            value={date}
+          />
+        </View>
+
+        <Text style={styles.addressLabel}>Pukul</Text>
+        <View style={styles.address_input}>
+          <TextInput
+            style={styles.input}
+            value={time}
+            editable={false}
+          />
+        </View>
+
+        <Text style={styles.addressLabel}>Calon Pilihan</Text>
+        <View style={styles.address_input}>
+          <TextInput
+            style={styles.input}
+            value={candidateName}
+            editable={false}
+          />
+        </View>
+
+        <Text style={styles.addressLabel}>No. Urut</Text>
+        <View style={styles.address_input}>
+          <TextInput
+            style={styles.input}
+            value={candidateNumber}
+            editable={false}
+          />
+        </View>
+
+        <Text style={styles.addressLabel}>Transaction Hash</Text>
+        <View style={styles.address_input}>
+          <TextInput
+            style={styles.input}
+            value={transactionAddress}
+            editable={false}
+          />
+          <TouchableOpacity
+            onPress={() => {
+              copyToClipboard();
+            }}
+            style={styles.clipboardButton}
+          >
+            <Image
+              source={require("../../assets/images/Clipboard.png")}
+              style={styles.clipboardImage}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <Link href={"/"} asChild>
+          <TouchableOpacity style={styles.selesai_bt}>
+            <Text style={styles.selesai_text}>Selesai</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
-
-      <Text style={styles.addressLabel}>Tanggal</Text>
-      <View style={styles.address_input}>
-        <TextInput style={styles.input} value="14/05/2024" editable={false} />
-      </View>
-
-      <Text style={styles.addressLabel}>Pukul</Text>
-      <View style={styles.address_input}>
-        <TextInput style={styles.input} value="09.46" editable={false} />
-      </View>
-
-      <Text style={styles.addressLabel}>Calon Pilihan</Text>
-      <View style={styles.address_input}>
-        <TextInput
-          style={styles.input}
-          value="Calon Nomor 1"
-          editable={false}
-        />
-      </View>
-
-      <Link href={"/"} asChild>
-        <TouchableOpacity style={styles.selesai_bt}>
-          <Text style={styles.selesai_text}>Selesai</Text>
-        </TouchableOpacity>
-      </Link>
-    </View>
+    </>
   );
 }
 
@@ -60,7 +107,7 @@ const { width, height } = Dimensions.get("window");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: "20%",
+    paddingTop: "10%",
     backgroundColor: "white",
     alignItems: "center",
   },
@@ -103,6 +150,14 @@ const styles = StyleSheet.create({
     color: "#697d95",
     fontFamily: "CircularStd-Book",
     fontSize: width * 0.035,
+  },
+  clipboardButton: {
+    padding: 5,
+  },
+  clipboardImage: {
+    width: 24,
+    height: 24,
+    resizeMode: "contain",
   },
   selesai_bt: {
     backgroundColor: "#00a58e",

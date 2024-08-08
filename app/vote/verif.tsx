@@ -1,76 +1,84 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   StyleSheet,
   Text,
   View,
   Dimensions,
-  TextInput,
   TouchableOpacity,
   Image,
-  ToastAndroid,
+  Alert,
 } from "react-native";
-import { Link, useLocalSearchParams } from "expo-router";
-import * as Clipboard from "expo-clipboard";
+import { Link, router, useLocalSearchParams } from "expo-router";
+import axios, { AxiosError } from "axios";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StatusBar } from "expo-status-bar";
 
 export default function Verif() {
-  const [privateKey, setPrivateKey] = useState("Test");
   const { response = "{}" } = useLocalSearchParams<{ response?: string }>();
   const responseData = JSON.parse(response);
   const { data } = responseData;
-  const { NIK, name } = data;
+  const { nfcSerialNumber, name } = data;
 
-  /* function showToast() {
-    ToastAndroid.show("Copied to clipboard!", ToastAndroid.SHORT);
-  }
+  const handleAPI = () => {
+    const payload = {
+      nfcSerialNumber,
+    };
 
-  const copyToClipboard = async () => {
-    await Clipboard.setStringAsync(privateKey);
-    showToast();
-  }; */
+    axios
+      .post(process.env.EXPO_PUBLIC_API_URL + "/voter/can-vote", payload)
+      .then((res) => {
+        router.push({
+          pathname: "/vote/pilih",
+          params: { nfcSerialNumber: nfcSerialNumber, name: name },
+        });
+      })
+      .catch((error: any) => {
+        if (error instanceof AxiosError) {
+          console.error(error);
+          Alert.alert("", "Anda Sudah Melakukan Pemilihan", [
+            { text: "OK", onPress: () => router.dismissAll() },
+          ]);
+        } else {
+          Alert.alert("", "Gagal Terhubung Ke Server", [{ text: "OK" }]);
+        }
+      });
+  };
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={require("../../assets/images/WomanWithPhone.png")}
-        style={styles.headerImage}
-      />
-      <Text style={styles.headerText}>Verifikasi Data Diri</Text>
+    <>
+      <StatusBar style="dark" />
+      <GestureHandlerRootView>
+        <View style={styles.container}>
+          <Image
+            source={require("../../assets/images/Feedback.png")}
+            style={styles.headerImage}
+          />
+          <Text style={styles.headerText}>Selamat Datang, {name}</Text>
 
-      <Text style={styles.private_key_label}>NIK</Text>
-      <View style={styles.private_key_input}>
-        <TextInput
-          style={styles.input}
-          value={NIK}
-          editable={false}
-        />
-      </View>
+          <Text style={styles.subText}>
+            PIN Anda berhasil diverifikasi. Sekarang Anda bisa melanjutkan untuk
+            melakukan pemilihan.
+          </Text>
 
-      <Text style={styles.private_key_label}>Nama</Text>
-      <View style={styles.private_key_input}>
-        <TextInput
-          style={styles.input}
-          value={name}
-          editable={false}
-        />
-      </View>
-
-      {/* <View style={styles.help_wrapper}>
-        <Image
-          source={require("../../assets/images/Glyph.png")}
-          style={styles.glyphImage}
-        />
-        <Text style={styles.help_text}>
-          Harap salin address berikut ke clipboard Anda untuk melihat histori
-          pemilihan Anda.
-        </Text>
-      </View> */}
-
-      <Link href={{pathname: "vote/pilih", params: { nik: NIK, name: name }}} asChild>
-        <TouchableOpacity style={styles.lanjutkan_bt}>
-          <Text style={styles.lanjutkan_text}>Lanjutkan</Text>
-        </TouchableOpacity>
-      </Link>
-    </View>
+          <Link
+            href={{
+              pathname: "vote/pilih",
+              params: { nfcSerialNumber: nfcSerialNumber, name: name },
+            }}
+            asChild
+          >
+            <TouchableOpacity
+              style={styles.lanjutkan_bt}
+              onPress={() => {
+                handleAPI();
+              }}
+            >
+              <Text style={styles.lanjutkan_text}>Lanjutkan</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </GestureHandlerRootView>
+    </>
   );
 }
 
@@ -79,7 +87,7 @@ const { width, height } = Dimensions.get("window");
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: "10%",
+    paddingTop: "25%",
     backgroundColor: "white",
     alignItems: "center",
   },
@@ -93,6 +101,14 @@ const styles = StyleSheet.create({
     fontSize: width * 0.045,
     textAlign: "center",
     color: "#000",
+  },
+  subText: {
+    fontFamily: "CircularStd-Book",
+    fontSize: width * 0.04,
+    textAlign: "center",
+    color: "#4f5e71",
+    marginTop: "5%",
+    lineHeight: 25,
   },
   private_key_label: {
     fontFamily: "CircularStd-Medium",
@@ -147,13 +163,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   lanjutkan_bt: {
-    backgroundColor: "#00a58e",
-    marginTop: "8%",
-    width: "90%",
-    height: height * 0.055,
+    backgroundColor: "#00A58E",
+    padding: "3%",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    position: "absolute",
+    bottom: "5%",
+    width: "90%",
+    alignSelf: "center",
+    flexDirection: "row",
   },
   lanjutkan_text: {
     color: "#fff",

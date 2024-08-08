@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 10.0.2"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dory-liberal-uniformly.ngrok-free.app/api"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dory-liberal-uniformly.ngrok-free.app/api"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dory-liberal-uniformly.ngrok-free.app/api"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
